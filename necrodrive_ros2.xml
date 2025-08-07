@@ -1,0 +1,11 @@
+<library path="necrodrive_ros2">
+    <class 
+        name="necrodrive_ros2/NecrodriveSystemHardware"
+        type="necrodrive_system::NecrodriveSystem"
+        base_class_type="hardware_interface::SystemInterface"
+    >
+        <description>
+            ros2_control hardware interface for NRND odrives via SocketCAN
+        </description>  
+    </class>
+</library>

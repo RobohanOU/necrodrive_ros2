@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="necrodrive_ros2_control" params="name prefix">
+  
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>omni_system_udp/OmniSystemHardware</plugin>
+        <param name="stm_target_port">4001</param>
+        <param name="omni_odom_port">4002</param>
+        <param name="target_ip">192.168.21.111</param>
+      </hardware>
+      <joint name="${prefix}left_wheel_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="${prefix}right_wheel_joint">
+        <command_interface name="velocity"/>`
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>
