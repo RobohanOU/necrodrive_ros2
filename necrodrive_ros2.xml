@@ -1,6 +1,6 @@
 <library path="necrodrive_ros2">
     <class 
-        name="necrodrive_ros2/NecrodriveSystemHardware"
+        name="necrodrive_ros2/NecrodriveSystem"
         type="necrodrive_system::NecrodriveSystem"
         base_class_type="hardware_interface::SystemInterface"
     >

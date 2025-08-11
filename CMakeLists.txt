@@ -35,6 +35,7 @@ add_library(
   necrodrive_ros2
   SHARED
   hardware/necrodrive_system.cpp
+  hardware/can_reader.cpp
 )
 target_compile_features(necrodrive_ros2 PUBLIC cxx_std_20)
 target_include_directories(necrodrive_ros2 PUBLIC
@@ -52,8 +53,13 @@ pluginlib_export_plugin_description_file(hardware_interface necrodrive_ros2.xml)
 
 # install
 install(
-  DIRECTORY hardware/include
+  DIRECTORY hardware/include 
   DESTINATION include/necrodrive_ros2
+)
+
+install(
+  DIRECTORY description bringup_test
+  DESTINATION share/${PROJECT_NAME}
 )
 
 install(TARGETS necrodrive_ros2

@@ -1,3 +1,19 @@
+/****************************NATSUROBOCON ROBOHAN*****************************
+    🮕             🮘  🭦🮄🮄🮄🮄🮃🮃🮃🮃🮃🮃🮂🮂🮂🮂🭛   🮘 🭦🭏▂▂▂▂▃▃▃█🭍▄▅▅▆▆   🭔🭀  🮘       🮕
+         🮘     🮕    🮕 ⎞ 🭦🮄🮄🮄║🮃🮃🮂🮂🮂 ⎛🮘           🭅🭛  🭥🭔🭍🭑▂▁▂🭐 🭭     🮕
+             🮘    🮕   ║ 🭦🮄🮄🮃║🮃🮃🮂🮂🭛 ║  🮕   🮘 ║🮀🮀🮀🮀🮀🮀🮀🮀🮀🮀▌ 🮂🮂   🮕              🮕
+        🮕          🮘 🭵🭱  ║  ║   ║ 🭵🭱        ║🬋🬋🬋🬋🬋🬋🬋🬋🬋🬍          🮘 
+             🮕       🭴🭰 🭋▂▂▃║▃▄▄🭛  ║  🮘     ║🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋   🮕        🮕
+      🮕        🮘   🮕 ║     🭵🭱      🭴🭰    🮕  🭦🮄🮄🮄🮄🮄🮃🮃🮃🮃🮂🮂🮂🮂🮂🭌  🮘     🮕
+                  🮘  ║     ║▁▂▂▃🭎   ║🭋🭡 🮘  🭅🭀 🭃🭌  🭃🭌  🭃🭌   ▊   
+        🮕      🮕    ⎠⎠ 🭦🮅🮅🮄🮄🮂🮂   🭦   V     🭒🭡 🭦🭡  🭦🭡  🭦🭡 🭦🭩🭡     🮘    🮕   
+****************************necrodrive_system.cpp****************************/ 
+/**
+ * Maintainer: Oz
+ * Description: Necrodrive ros2_control hardware interface. See header for more detail
+ * Robohan 2025
+ */
+
 #include "necrodrive_ros2/necrodrive_system.hpp"
 
 namespace necrodrive_system
@@ -10,23 +26,14 @@ constexpr ros2socketcan::FrameType RTRFRAME = ros2socketcan::FrameType::REMOTE;
 
 //-------------------------------------UTILITIES-------------------------------------------
 
-template <typename T>
-void NecrodriveSystem::send_odrive_(uint8_t command, T data, uint8_t startBit)
-{
-    ros2socketcan::CanId id = get_can_id_(command, false);
-    uint64_t dataBits = 0;
-    std::memcpy(&dataBits, &data, sizeof(T));
-
-    uint64_t rawdata = 0;
-    rawdata |= dataBits << startBit;
-   
-    pSender_->send(static_cast<void*>(&rawdata), sizeof(T), id, write_timeout_ns_);
-}
-
-
+/**
+ * \brief   applies command to node id
+ * \returns combined id and command
+ */
 auto NecrodriveSystem::get_can_id_(uint8_t command, bool is_rtr) -> ros2socketcan::CanId
 {
     uint8_t idcmd = odrv_id_ << 5 | command;
+    //RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "CMDID: 0x%X", idcmd);
     return ros2socketcan::CanId { idcmd, 0, (is_rtr) ? RTRFRAME : DATAFRAME, ros2socketcan::StandardFrame};
 }
 
@@ -69,12 +76,12 @@ auto NecrodriveSystem::on_init(const hwi::HardwareInfo& info) -> hwi::CallbackRe
         }
 
         // command interface type check
-        if (joint.command_interfaces[0].name != hwi::HW_IF_POSITION)
+        if (joint.command_interfaces[0].name == hwi::HW_IF_POSITION)
         {
             mode_ = POSITION_CONTROL;
             RCLCPP_INFO(get_logger(), "Control mode set to position");
         }
-        else if (joint.command_interfaces[0].name != hwi::HW_IF_VELOCITY)
+        else if (joint.command_interfaces[0].name == hwi::HW_IF_VELOCITY)
         {
             mode_ = VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "Control mode set to velocity");
@@ -126,7 +133,7 @@ auto NecrodriveSystem::on_init(const hwi::HardwareInfo& info) -> hwi::CallbackRe
 auto NecrodriveSystem::on_configure(const rclcpp_lifecycle::State& /*previous_state*/)
     -> hwi::CallbackReturn
 {
-    RCLCPP_INFO(get_logger(), "Conigurating necrodrive..");
+    RCLCPP_INFO(get_logger(), "Configurating necrodrive..");
 
     // allocate sender
     if (!pSender_)
@@ -152,6 +159,8 @@ auto NecrodriveSystem::on_configure(const rclcpp_lifecycle::State& /*previous_st
         {
             auto pReceiver = std::make_shared<ros2socketcan::SocketCanReceiver>(interface_, false);
             pCanReader_ = std::make_unique<CanReader>(
+                get_logger(),
+                get_clock(),
                 std::make_shared<ros2socketcan::SocketCanSender>(interface_, false),
                 pReceiver,
                 write_timeout_ns_,
@@ -234,8 +243,32 @@ auto NecrodriveSystem::on_deactivate(const rclcpp_lifecycle::State& /*previous_s
 auto NecrodriveSystem::read(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
     -> hwi::return_type
 {
+    // get pos and vel
+    auto estimate_future = pCanReader_->send_request<encoder_estimates_t>(
+        std::make_shared<CanRequest<encoder_estimates_t>>(get_can_id_(odrive_cmds::GET_ENCODER_ESTIMATES, true))
+    );
+    auto estimates = estimate_future.get();
+
+    for (const auto & [name, descr] : joint_state_interfaces_)
+    {
+        if (descr.get_interface_name() == hardware_interface::HW_IF_POSITION) // pos
+        {   
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "read pos: %f vel: %f", estimates.pos, estimates.vel);
+            set_state(name, static_cast<double>(estimates.pos));
+        } else { // vel
+            set_state(name, static_cast<double>(estimates.vel));
+        }
+    }
+
+    return hwi::return_type::OK;
+}
+
+auto NecrodriveSystem::write(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
+    -> hwi::return_type
+{
     for (const auto& [name, descr] : joint_command_interfaces_)
     {
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "write: %f", get_command(name));
         // read from command interface
         if (mode_ == POSITION_CONTROL)
         {
@@ -250,28 +283,6 @@ auto NecrodriveSystem::read(const rclcpp::Time& /*time*/, const rclcpp::Duration
     }
     
     return hardware_interface::return_type::OK;
-}
-
-auto NecrodriveSystem::write(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
-    -> hwi::return_type
-{
-    // get pos and vel
-    auto estimate_future = pCanReader_->send_request<encoder_estimates_t>(
-        std::make_shared<CanRequest<encoder_estimates_t>>(get_can_id_(odrive_cmds::GET_ENCODER_ESTIMATES, true))
-    );
-    auto estimates = estimate_future.get();
-
-    for (const auto & [name, descr] : joint_state_interfaces_)
-    {
-        if (descr.get_interface_name() == hardware_interface::HW_IF_POSITION) // pos
-        {   
-            set_state(name, static_cast<double>(estimates.pos));
-        } else { // vel
-            set_state(name, static_cast<double>(estimates.vel));
-        }
-    }
-
-    return hwi::return_type::OK;
 }
 
 }

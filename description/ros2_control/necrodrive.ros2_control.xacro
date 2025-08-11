@@ -5,17 +5,16 @@
   
     <ros2_control name="${name}" type="system">
       <hardware>
-        <plugin>omni_system_udp/OmniSystemHardware</plugin>
-        <param name="stm_target_port">4001</param>
-        <param name="omni_odom_port">4002</param>
-        <param name="target_ip">192.168.21.111</param>
+        <plugin>necrodrive_ros2/NecrodriveSystem</plugin>
+        <param name="can_interface">can0</param>
+        <param name="odrive_id">0</param>
+        <param name="write_timeout_ns">20</param>
+        <param name="read_timeout_ns">1000</param>
+        <param name="heartbeat_timeout_ms">150</param>
       </hardware>
-      <joint name="${prefix}left_wheel_joint">
-        <command_interface name="velocity"/>
-        <state_interface name="velocity"/>
-      </joint>
-      <joint name="${prefix}right_wheel_joint">
-        <command_interface name="velocity"/>`
+      <joint name="${prefix}_joint">
+        <command_interface name="position"/>
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
     </ros2_control>

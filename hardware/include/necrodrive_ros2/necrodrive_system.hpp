@@ -40,7 +40,9 @@ enum ControlMode
 
 
 
-class NecrodriveSystem : public hardware_interface::SystemInterface
+class NecrodriveSystem : 
+    public hardware_interface::SystemInterface, 
+    public std::enable_shared_from_this<NecrodriveSystem>
 {
 public:
     RCLCPP_SHARED_PTR_DEFINITIONS(NecrodriveSystem)
@@ -67,9 +69,7 @@ private:
     ros2socketcan::CanId get_can_id_(uint8_t command, bool is_rtr);
     
     template <typename T>
-    void send_odrive_(uint8_t command, T data, uint8_t startBit=0);
-    template <typename T>
-    T getOdrive_(uint8_t command);
+    void send_odrive_(uint8_t command, T data, uint8_t start_bit=0);
 
     
     std::string interface_;                             // name of the CAN socket interface
@@ -83,5 +83,25 @@ private:
     std::unique_ptr<drivers::socketcan::SocketCanSender> pSender_;
     std::unique_ptr<CanReader> pCanReader_;
 };
+
+// templates
+/**
+ * \brief sends a 'set' command to the axis
+ * \param command   command code
+ * \param data      data to send
+ * \param start_bit starting bit offset
+ */
+template <typename T>
+void NecrodriveSystem::send_odrive_(uint8_t command, T data, uint8_t start_bit)
+{
+    ros2socketcan::CanId id = get_can_id_(command, false);
+    uint64_t dataBits = 0;
+    std::memcpy(&dataBits, &data, sizeof(T));
+
+    uint64_t rawdata = 0;
+    rawdata |= dataBits << start_bit;
+   
+    pSender_->send(static_cast<void*>(&rawdata), sizeof(T), id, write_timeout_ns_);
+}
 
 }

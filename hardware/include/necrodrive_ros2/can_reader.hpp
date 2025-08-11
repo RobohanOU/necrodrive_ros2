@@ -1,3 +1,19 @@
+/****************************NATSUROBOCON ROBOHAN*****************************
+    🮕             🮘  🭦🮄🮄🮄🮄🮃🮃🮃🮃🮃🮃🮂🮂🮂🮂🭛   🮘 🭦🭏▂▂▂▂▃▃▃█🭍▄▅▅▆▆   🭔🭀  🮘       🮕
+         🮘     🮕    🮕 ⎞ 🭦🮄🮄🮄║🮃🮃🮂🮂🮂 ⎛🮘           🭅🭛  🭥🭔🭍🭑▂▁▂🭐 🭭     🮕
+             🮘    🮕   ║ 🭦🮄🮄🮃║🮃🮃🮂🮂🭛 ║  🮕   🮘 ║🮀🮀🮀🮀🮀🮀🮀🮀🮀🮀▌ 🮂🮂   🮕              🮕
+        🮕          🮘 🭵🭱  ║  ║   ║ 🭵🭱        ║🬋🬋🬋🬋🬋🬋🬋🬋🬋🬍          🮘 
+             🮕       🭴🭰 🭋▂▂▃║▃▄▄🭛  ║  🮘     ║🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋🬋   🮕        🮕
+      🮕        🮘   🮕 ║     🭵🭱      🭴🭰    🮕  🭦🮄🮄🮄🮄🮄🮃🮃🮃🮃🮂🮂🮂🮂🮂🭌  🮘     🮕
+                  🮘  ║     ║▁▂▂▃🭎   ║🭋🭡 🮘  🭅🭀 🭃🭌  🭃🭌  🭃🭌   ▊   
+        🮕      🮕    ⎠⎠ 🭦🮅🮅🮄🮄🮂🮂   🭦   V     🭒🭡 🭦🭡  🭦🭡  🭦🭡 🭦🭩🭡     🮘    🮕   
+****************************necrodrive_system.cpp****************************/ 
+/**
+ * Maintainer: Oz
+ * Description: Necrodrive ros2_control hardware interface. See header for more detail
+ * Robohan 2025
+ */
+
 #pragma once
 
 #include <mutex>
@@ -13,6 +29,11 @@
 #include "ros2_socketcan/socket_can_receiver.hpp"
 #include "ros2_socketcan/socket_can_id.hpp"
 
+#include "hardware_interface/system_interface.hpp"
+
+// logging
+#include "rclcpp/logging.hpp"
+#include "rclcpp/clock.hpp"
 
 
 namespace necrodrive_system
@@ -60,6 +81,8 @@ class CanReader
 {
 public:
     CanReader(
+        rclcpp::Logger logger,
+        rclcpp::Clock::SharedPtr pClock,
         std::shared_ptr<ros2socketcan::SocketCanSender> pSender,
         std::shared_ptr<ros2socketcan::SocketCanReceiver> pReceiver,
         std::chrono::nanoseconds write_timeout,
@@ -76,12 +99,16 @@ public:
         std::lock_guard lock(request_mutex_);
         return health_;
     }
-    
+
     template <typename T>
     std::future<T> send_request(std::shared_ptr<CanRequest<T>> pRequest);
-    private:
+
+private:
     void handle_frame(ros2socketcan::CanId& id, std::array<uint8_t, 8>& data);
     
+    rclcpp::Logger logger_;
+    rclcpp::Clock::SharedPtr pClock_;
+
     std::shared_ptr<ros2socketcan::SocketCanSender> pSender_;
     std::shared_ptr<ros2socketcan::SocketCanReceiver> pReceiver_;
     
@@ -101,5 +128,21 @@ public:
     std::optional<std::chrono::time_point<std::chrono::steady_clock>> last_heartbeat_;
     Health health_ = RED;
 };
+
+// templates
+template <typename T>
+std::future<T> CanReader::send_request(std::shared_ptr<CanRequest<T>> pRequest)
+{
+    auto future = pRequest->get_future();
+    {
+        std::lock_guard lock(request_mutex_);
+        pending_list_[pRequest->id.identifier()].push(pRequest);
+        // send request
+        uint64_t raw_data = 0;
+        pSender_->send(static_cast<void *>(&raw_data), pRequest->get_size(), pRequest->id, write_timeout_);
+    }
+    
+    return future;
+}
 
 }

@@ -1,0 +1,51 @@
+<?xml version="1.0" ?>
+<sdf version="1.8" xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:gz="http://gazebosim.org/schema">
+    <model name="robot" canonical_link="base_link">
+        <link name="base_link">
+            <pose>0 0 0 0 0 0</pose>
+            <visual name="visual">
+                <geometry>
+                    <cylinder>
+                        <radius>0.02</radius>
+                        <length>0.01</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+        <link name="bldc">
+            <pose>0 0 0.02 0 0 0</pose>
+            <visual name="visual">
+                <geometry>
+                    <cylinder>
+                        <radius>0.03</radius>
+                        <length>0.03</length>
+                    </cylinder>
+                </geometry>
+            </visual>
+        </link>
+        <joint name="bldc_joint" type="revolute">
+            <pose relative_to="bldc" />
+            <parent>base_link</parent>
+            <child>bldc</child>
+            <axis>
+                <xyz expressed_in="__model__">0 0 1</xyz>
+            </axis>
+        </joint>
+
+        <ros2_control name="NecrodriveSystem" type="system">
+            <hardware>
+                <plugin>necrodrive_ros2/NecrodriveSystem</plugin>
+                <param name="can_interface">can0</param>
+                <param name="odrive_id">0</param>
+                <param name="write_timeout_ns">20</param>
+                <param name="read_timeout_ns">10</param>
+                <param name="heartbeat_timeout_ms">150</param>
+            </hardware>
+            <joint name="bldc_joint">
+                <command_interface name="position"/>
+                <state_interface name="position"/>
+                <state_interface name="velocity"/>
+            </joint>
+        </ros2_control>
+    </model>
+</sdf>
