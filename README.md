@@ -39,14 +39,14 @@ First, here's the assumption Necrodrive makes about your ODrive.
 
 If the ODrive meets this requirement, you may move on to configuring Necrodrive. First, open `bringup_test/sdf/robot.sdf.xacro`. Scroll down and you will find the parameters for the hardware interface
 ```xml
-    <hardware>
-        <plugin>necrodrive_ros2/NecrodriveSystem</plugin>
-        <param name="can_interface">can0</param>
-        <param name="odrive_id">0</param>
-        <param name="write_timeout_ns">20</param>
-        <param name="read_timeout_ns">10</param>
-        <param name="heartbeat_timeout_ms">150</param>
-    </hardware>
+<hardware>
+    <plugin>necrodrive_ros2/NecrodriveSystem</plugin>
+    <param name="can_interface">can0</param>
+    <param name="odrive_id">0</param>
+    <param name="write_timeout_ns">20</param>
+    <param name="read_timeout_ns">10</param>
+    <param name="heartbeat_timeout_ms">150</param>
+</hardware>
 ``` 
 The parameters are self-explanatory. Just make sure your SocketCAN interface is set up. If you'd like to know how, see [Setting up SocketCAN](#setting-up-socketcan).
 
