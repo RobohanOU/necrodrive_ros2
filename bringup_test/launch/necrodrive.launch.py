@@ -5,6 +5,8 @@ here are the assumptions made:
 can interface: can0
 axis node id: 0x0
 
+this can be modified in the sdf file
+
 """
 # -----------------------------NATSUROBOCON ROBOHAN----------------------------
 #    🮕             🮘  🭦🮄🮄🮄🮄🮃🮃🮃🮃🮃🮃🮂🮂🮂🮂🭛   🮘 🭦🭏▂▂▂▂▃▃▃█🭍▄▅▅▆▆   🭔🭀  🮘       🮕
@@ -17,8 +19,9 @@ axis node id: 0x0
 #        🮕      🮕    ⎠⎠ 🭦🮅🮅🮄🮄🮂🮂   🭦   V     🭒🭡 🭦🭡  🭦🭡  🭦🭡 🭦🭩🭡     🮘    🮕
 # -----------------------------necrodrive.launch.py----------------------------
 # Maintainer: Oz
-# Description:  Necrodrive ros2_control hardware interface
+# Description:  Necrodrive ros2_control hardware interface launchfile
 #               Derived from ros2_control example_1
+#               See the README for usage instructions
 # Robohan 2025
 #
 
@@ -58,19 +61,22 @@ def generate_launch_description():
 
     # Initialize Arguments
     gui = LaunchConfiguration('gui')
-    use_jtc = LaunchConfiguration('use_jtc')
+    use_jtc = LaunchConfiguration('use_jtc')  # jtc = joint trajectory control
 
     this_package = get_package_share_directory('necrodrive_ros2')
 
+    # xacro path
     robot_description_path = os.path.join(
         this_package,
         'bringup_test',
         'sdf',
         'robot.sdf.xacro',
     )
+    # turn xacro into sdf/urdf
     robot_description_content = xacro.process_file(robot_description_path).toprettyxml(indent='   ')
     robot_description = {'robot_description': robot_description_content}
 
+    # controller yaml config filepath
     robot_controllers = PathJoinSubstitution(
         [
             this_package,
@@ -79,22 +85,27 @@ def generate_launch_description():
             'jtc.yaml' if IfCondition(use_jtc) else 'controllers.yaml',
         ]
     )
+
     rviz_config_file = PathJoinSubstitution(
         [this_package, 'bringup_test', 'rviz', 'necrodrive_test.rviz']
     )
 
+    # controller manager node. Manages the controller
     control_node = Node(
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_controllers],
         output='both',
     )
+
+    # publishes the robot's description for rviz and stuff
     robot_state_pub_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[robot_description],
         output='both',
     )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -104,17 +115,19 @@ def generate_launch_description():
         condition=IfCondition(gui),
     )
 
+    # publishes the state of the controlled joint, for rviz and stuff
     joint_state_broadcaster_spawner = Node(
         package='controller_manager',
         executable='spawner',
         arguments=['joint_state_broadcaster'],
     )
 
+    # responsible for spawning the actual controller
     robot_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
         arguments=[
-            'joint_trajectory_position_controller' if IfCondition(use_jtc) else 
+            'joint_trajectory_position_controller' if IfCondition(use_jtc) else
                 'forward_position_controller',
             '--param-file', robot_controllers],
     )

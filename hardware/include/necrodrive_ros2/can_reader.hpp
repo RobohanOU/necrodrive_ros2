@@ -7,11 +7,16 @@
       🮕        🮘   🮕 ║     🭵🭱      🭴🭰    🮕  🭦🮄🮄🮄🮄🮄🮃🮃🮃🮃🮂🮂🮂🮂🮂🭌  🮘     🮕
                   🮘  ║     ║▁▂▂▃🭎   ║🭋🭡 🮘  🭅🭀 🭃🭌  🭃🭌  🭃🭌   ▊   
         🮕      🮕    ⎠⎠ 🭦🮅🮅🮄🮄🮂🮂   🭦   V     🭒🭡 🭦🭡  🭦🭡  🭦🭡 🭦🭩🭡     🮘    🮕   
-****************************necrodrive_system.cpp****************************/ 
+********************************can_reader.hpp*******************************/ 
 /**
- * Maintainer: Oz
- * Description: Necrodrive ros2_control hardware interface. See header for more detail
- * Robohan 2025
+ * \file        can_reader.hpp
+ * \author      Oz
+ * \brief       'CanReader' helper class for handling RTR requests
+ * 
+ * Runs a thread that checks for incoming CAN messages and matches them to 
+ * CanRequest objects, which are made through CanReader::send_request() 
+ * 
+ * \copyright   Robohan 2025
  */
 
 #pragma once

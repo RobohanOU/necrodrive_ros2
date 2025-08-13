@@ -9,10 +9,12 @@
         🮕      🮕    ⎠⎠ 🭦🮅🮅🮄🮄🮂🮂   🭦   V     🭒🭡 🭦🭡  🭦🭡  🭦🭡 🭦🭩🭡     🮘    🮕   
 ********************************can_reader.cpp*******************************/ 
 /**
- * Maintainer: Oz
- * Description: 'Can Reader' helper class for handling RTR requests
- * Robohan 2025
+ * \author Oz
+ * \brief: 'CanReader' helper class for handling RTR requests
  * 
+ * See header for more details
+ * 
+ * \copyright Robohan 2025
  */
 
 #include "necrodrive_ros2/can_reader.hpp"

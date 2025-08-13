@@ -10,7 +10,7 @@
 ****************************necrodrive_system.cpp****************************/ 
 /**
  * Maintainer: Oz
- * Description: Necrodrive ros2_control hardware interface. See header for more detail
+ * Description: Necrodrive ros2_control hardware interface. See header for more detail.
  * Robohan 2025
  */
 
