@@ -5,7 +5,7 @@
     <img alt="Static Badge" src="https://img.shields.io/badge/17-C%2B%2B?style=for-the-badge&logo=C%2B%2B&logoColor=%2300599C&label=C%2B%2B&labelColor=gainsboro">
 </div>
 
-Because the official ODrive ros2_control doesn't respect their elders.
+Because the official ODrive ros2_control package doesn't respect their elders.
 
 Table of contents:
 - [Installation](#installation)
